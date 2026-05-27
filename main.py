@@ -53,17 +53,34 @@ class SerialManager:
         self.reader_thread = None
         
     def list_ports(self):
-        """Return list of available serial ports, filtered to active USB/CDC devices."""
+        """Return list of available serial ports with manufacturer/product info.
+        
+        Returns formatted strings like: "device (Manufacturer - Product)"
+        Filtered to active USB/CDC devices only.
+        """
         all_ports = serial.tools.list_ports.comports()
-        active_ports = []
+        port_display_list = []
         for port in all_ports:
-            # Include port if it has USB PID/VID (actual connected USB device)
-            if hasattr(port, 'pid') and port.pid and hasattr(port, 'vid') and port.vid:
-                active_ports.append(port.device)
-            # On Linux, also include ttyACM and ttyUSB devices (CDC-ACM class)
-            elif port.device and ('/dev/ttyACM' in port.device or '/dev/ttyUSB' in port.device):
-                active_ports.append(port.device)
-        return active_ports
+            # Skip non-USB devices
+            if not (hasattr(port, 'pid') and port.pid and hasattr(port, 'vid') and port.vid):
+                if not (port.device and ('/dev/ttyACM' in port.device or '/dev/ttyUSB' in port.device)):
+                    continue
+            
+            # Build compact display string
+            info_parts = []
+            if hasattr(port, 'manufacturer') and port.manufacturer:
+                info_parts.append(port.manufacturer)
+            if hasattr(port, 'product') and port.product:
+                info_parts.append(port.product)
+            
+            if info_parts:
+                display_str = f"{port.device} ({' - '.join(info_parts)})"
+            else:
+                display_str = port.device
+            
+            port_display_list.append(display_str)
+        
+        return port_display_list
     
     def connect(self, port_name, baudrate=115200, timeout=1):
         """Connect to a serial port."""
@@ -392,7 +409,8 @@ class LantanGUI:
         self.port_combo = ttk.Combobox(
             self.menu_frame,
             textvariable=self.port_var,
-            state="readonly"
+            state="readonly",
+            width=50
         )
         self.port_combo.pack(side=tk.LEFT, padx=5)
         
@@ -660,10 +678,14 @@ class LantanGUI:
             self.connect_btn.config(text="Connect")
             self.status_label.config(text="Disconnected")
         else:
-            port = self.port_var.get()
-            if not port:
+            port_display = self.port_var.get()
+            if not port_display:
                 messagebox.showerror("Error", "No port selected!")
                 return
+            
+            # Extract device path by removing everything in parentheses
+            # e.g., "/dev/ttyACM0 (Manufacturer - Product)" -> "/dev/ttyACM0"
+            port = port_display.split(" (")[0] if " (" in port_display else port_display
             
             if self.serial_manager.connect(port):
                 self.connect_btn.config(text="Disconnect")

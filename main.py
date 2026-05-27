@@ -494,24 +494,24 @@ class LantanGUI:
             ('Channel B Active', 'channel_b_active'),
             ('Channel C Active', 'channel_c_active'),
             ('Channel D Active', 'channel_d_active'),
-            ('Mod Amp A (uA)', 'mod_amp_a'),
-            ('Mod Amp B (uA)', 'mod_amp_b'),
-            ('Mod Amp C (uA)', 'mod_amp_c'),
-            ('Mod Amp D (uA)', 'mod_amp_d'),
+            ('Mod Amp A (mA)', 'mod_amp_a'),
+            ('Mod Amp B (mA)', 'mod_amp_b'),
+            ('Mod Amp C (mA)', 'mod_amp_c'),
+            ('Mod Amp D (mA)', 'mod_amp_d'),
             ('Det. Sensitivity', 'detector_sensitivity'),
             ('Det. Gain', 'detector_gain'),
         ]
         
         # Right column fields: Voltage, Current, and DUT Resp
         right_column_fields = [
-            ('Voltage A (uV)', 'voltage_a'),
-            ('Voltage B (uV)', 'voltage_b'),
-            ('Voltage C (uV)', 'voltage_c'),
-            ('Voltage D (uV)', 'voltage_d'),
-            ('Current A (uA)', 'current_a'),
-            ('Current B (uA)', 'current_b'),
-            ('Current C (uA)', 'current_c'),
-            ('Current D (uA)', 'current_d'),
+            ('Voltage A (mV)', 'voltage_a'),
+            ('Voltage B (mV)', 'voltage_b'),
+            ('Voltage C (mV)', 'voltage_c'),
+            ('Voltage D (mV)', 'voltage_d'),
+            ('Current A (mA)', 'current_a'),
+            ('Current B (mA)', 'current_b'),
+            ('Current C (mA)', 'current_c'),
+            ('Current D (mA)', 'current_d'),
             ('DUT Resp A', 'dut_response_a'),
             ('DUT Resp B', 'dut_response_b'),
             ('DUT Resp C', 'dut_response_c'),
@@ -730,17 +730,35 @@ class LantanGUI:
                 break
     
     def _update_display(self):
-        """Update numerical displays with last received data."""
+        """Update numerical displays with last received data.
+        
+        Converts uV to mV and uA to mA, formats to 1 decimal place.
+        """
         if not self.last_update:
             return
         
         data = self.last_update
         
+        # Unit conversion factors
+        uV_to_mV = 1000.0
+        uA_to_mA = 1000.0
+        
+        # Fields to convert
+        voltage_fields = ['voltage_a', 'voltage_b', 'voltage_c', 'voltage_d']
+        current_fields = ['current_a', 'current_b', 'current_c', 'current_d']
+        mod_amp_fields = ['mod_amp_a', 'mod_amp_b', 'mod_amp_c', 'mod_amp_d']
+        
         # Update all display fields
         for key, var in self.display_labels.items():
             value = data.get(key, "N/A")
-            if isinstance(value, float):
-                var.set(f"{value:.4f}")
+            if isinstance(value, (int, float)):
+                # Apply unit conversions
+                if key in voltage_fields:
+                    value = value / uV_to_mV
+                elif key in current_fields or key in mod_amp_fields:
+                    value = value / uA_to_mA
+                # Format to 1 decimal place
+                var.set(f"{value:.1f}")
             else:
                 var.set(str(value))
     

@@ -221,6 +221,7 @@ class LantanGUI:
         
         # Last update data for numerical displays
         self.last_update = None
+        self.running = True
         
         # Create UI
         self._create_ui()
@@ -242,7 +243,7 @@ class LantanGUI:
         
         # Left panel for numerical displays and configuration
         self.left_panel = ttk.Frame(self.root)
-        self.left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
+        self.left_panel.pack(side=tk.LEFT, fill=tk.BOTH, padx=5, pady=5)
         
         # Create menu ribbon
         self._create_menu_ribbon()
@@ -526,17 +527,20 @@ class LantanGUI:
     
     def _process_messages(self):
         """Process incoming messages from serial port."""
-        while True:
+        while self.running:
             try:
-                msg = self.serial_manager.message_queue.get()
+                msg = self.serial_manager.message_queue.get(timeout=0.1)
                 parsed = self.serial_manager.parse_update_message(msg)
-                if parsed:
+                if parsed and hasattr(self, 'root') and self.root.winfo_exists():
                     self.last_update = parsed
                     # Trigger UI update on main thread
                     self.root.after(0, self._update_display)
                     self.root.after(0, self._update_plot)
+            except queue.Empty:
+                continue
             except Exception as e:
                 print(f"Message processing error: {e}")
+                break
     
     def _update_display(self):
         """Update numerical displays with last received data."""
@@ -610,6 +614,7 @@ class LantanGUI:
     
     def _on_close(self):
         """Handle window close."""
+        self.running = False
         self.serial_manager.disconnect()
         self.root.quit()
         self.root.destroy()

@@ -244,10 +244,10 @@ class LantanGUI:
         self.detector_sensitivity = tk.IntVar(value=1)
         self.detector_gain = tk.IntVar(value=1)
         self.mod_intensity = {
-            'A': tk.DoubleVar(value=50.0),
-            'B': tk.DoubleVar(value=50.0),
-            'C': tk.DoubleVar(value=50.0),
-            'D': tk.DoubleVar(value=50.0)
+            'A': tk.IntVar(value=50),
+            'B': tk.IntVar(value=50),
+            'C': tk.IntVar(value=50),
+            'D': tk.IntVar(value=50)
         }
         
         # Last update data for numerical displays
@@ -602,14 +602,20 @@ class LantanGUI:
             ttk.Label(config_frame, text=f"Channel {ch}:").grid(
                 row=row_offset, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2
             )
-            # Slider
+            # Slider with integer-only values
+            def make_int_cmd(var):
+                def cmd(val):
+                    var.set(int(float(val)))
+                return cmd
+            
             slider = ttk.Scale(
                 config_frame,
                 from_=0,
                 to=100,
                 variable=self.mod_intensity[ch],
                 orient=tk.HORIZONTAL,
-                length=200
+                length=200,
+                command=make_int_cmd(self.mod_intensity[ch])
             )
             slider.grid(row=row_offset+1, column=0, columnspan=4, sticky=tk.EW, padx=5, pady=2)
             

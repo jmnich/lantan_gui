@@ -494,13 +494,15 @@ class LantanGUI:
             if self.serial_manager.connect(port):
                 self.connect_btn.config(text="Disconnect")
                 self.status_label.config(text=f"Connected to {port}")
+                # Send configuration automatically twice with 100ms delay
+                self._send_configuration_commands()
+                self.root.after(100, self._send_configuration_commands)
             else:
                 messagebox.showerror("Error", f"Failed to connect to {port}")
     
-    def _update_configuration(self):
-        """Send configuration to device."""
+    def _send_configuration_commands(self):
+        """Send configuration commands to device without UI feedback."""
         if not self.serial_manager.is_connected:
-            messagebox.showwarning("Warning", "Not connected to device!")
             return
         
         # Send MODULATOR command
@@ -522,7 +524,14 @@ class LantanGUI:
             self.detector_gain.get()
         ]
         self.serial_manager.send_command('DETECTOR', *det_cmd)
+    
+    def _update_configuration(self):
+        """Send configuration to device."""
+        if not self.serial_manager.is_connected:
+            messagebox.showwarning("Warning", "Not connected to device!")
+            return
         
+        self._send_configuration_commands()
         messagebox.showinfo("Info", "Configuration updated!")
     
     def _process_messages(self):

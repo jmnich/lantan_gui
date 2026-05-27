@@ -472,7 +472,11 @@ class LantanGUI:
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
     
     def _create_numerical_displays(self):
-        """Create numerical displays section."""
+        """Create numerical displays section with 2 columns.
+        
+        Left column: Power Good, Channel states, Mod Amp, DUT Resp, Detector
+        Right column: Voltage A-D, Current A-D
+        """
         num_frame = ttk.LabelFrame(
             self.left_panel,
             text="Numerical Displays",
@@ -482,12 +486,24 @@ class LantanGUI:
         
         # Field names and values for display
         self.display_labels = {}
-        display_fields = [
+        
+        # Left column fields (all except Voltage, Current, and DUT Resp)
+        left_column_fields = [
             ('Power Good', 'power_good'),
             ('Channel A Active', 'channel_a_active'),
             ('Channel B Active', 'channel_b_active'),
             ('Channel C Active', 'channel_c_active'),
             ('Channel D Active', 'channel_d_active'),
+            ('Mod Amp A (uA)', 'mod_amp_a'),
+            ('Mod Amp B (uA)', 'mod_amp_b'),
+            ('Mod Amp C (uA)', 'mod_amp_c'),
+            ('Mod Amp D (uA)', 'mod_amp_d'),
+            ('Det. Sensitivity', 'detector_sensitivity'),
+            ('Det. Gain', 'detector_gain'),
+        ]
+        
+        # Right column fields: Voltage, Current, and DUT Resp
+        right_column_fields = [
             ('Voltage A (uV)', 'voltage_a'),
             ('Voltage B (uV)', 'voltage_b'),
             ('Voltage C (uV)', 'voltage_c'),
@@ -496,31 +512,32 @@ class LantanGUI:
             ('Current B (uA)', 'current_b'),
             ('Current C (uA)', 'current_c'),
             ('Current D (uA)', 'current_d'),
-            ('Mod Amp A (uA)', 'mod_amp_a'),
-            ('Mod Amp B (uA)', 'mod_amp_b'),
-            ('Mod Amp C (uA)', 'mod_amp_c'),
-            ('Mod Amp D (uA)', 'mod_amp_d'),
             ('DUT Resp A', 'dut_response_a'),
             ('DUT Resp B', 'dut_response_b'),
             ('DUT Resp C', 'dut_response_c'),
             ('DUT Resp D', 'dut_response_d'),
-            ('Det. Sensitivity', 'detector_sensitivity'),
-            ('Det. Gain', 'detector_gain'),
         ]
         
         # Create 2-column layout
-        for i, (label_text, field_key) in enumerate(display_fields):
-            row = i // 2
-            col = i % 2
-            
-            # Label
+        # Left column (grid columns 0-1)
+        for row, (label_text, field_key) in enumerate(left_column_fields):
             label = ttk.Label(num_frame, text=label_text + ":")
-            label.grid(row=row, column=col*2, sticky=tk.W, padx=5, pady=2)
+            label.grid(row=row, column=0, sticky=tk.W, padx=5, pady=2)
             
-            # Value display
             value_var = tk.StringVar(value="N/A")
             value_label = ttk.Label(num_frame, textvariable=value_var)
-            value_label.grid(row=row, column=col*2+1, sticky=tk.E, padx=5, pady=2)
+            value_label.grid(row=row, column=1, sticky=tk.E, padx=5, pady=2)
+            
+            self.display_labels[field_key] = value_var
+        
+        # Right column (grid columns 2-3)
+        for row, (label_text, field_key) in enumerate(right_column_fields):
+            label = ttk.Label(num_frame, text=label_text + ":")
+            label.grid(row=row, column=2, sticky=tk.W, padx=5, pady=2)
+            
+            value_var = tk.StringVar(value="N/A")
+            value_label = ttk.Label(num_frame, textvariable=value_var)
+            value_label.grid(row=row, column=3, sticky=tk.E, padx=5, pady=2)
             
             self.display_labels[field_key] = value_var
     

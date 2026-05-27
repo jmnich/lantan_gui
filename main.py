@@ -218,7 +218,8 @@ class LantanGUI:
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         
         # Launch in maximized window mode
-        self.root.state('zoomed')
+        self.root.update()
+        self.root.attributes('-zoomed', True)
         
         # Apply dark theme
         self._apply_dark_theme()
@@ -403,6 +404,14 @@ class LantanGUI:
             command=self._toggle_connect
         )
         self.connect_btn.pack(side=tk.LEFT, padx=5)
+        
+        # Clear button
+        self.clear_btn = ttk.Button(
+            self.menu_frame,
+            text="Clear",
+            command=self._clear_data
+        )
+        self.clear_btn.pack(side=tk.LEFT, padx=5)
         
         # Connection status label
         self.status_label = ttk.Label(self.menu_frame, text="Disconnected")
@@ -633,6 +642,19 @@ class LantanGUI:
                 self.root.after(100, self._send_configuration_commands)
             else:
                 messagebox.showerror("Error", f"Failed to connect to {port}")
+    
+    def _clear_data(self):
+        """Clear all data buffers."""
+        # Reset data lists
+        self.sample_count = 0
+        self.time_data = list(range(self.max_samples))
+        self.dut_a_data = [0.0] * self.max_samples
+        self.dut_b_data = [0.0] * self.max_samples
+        self.dut_c_data = [0.0] * self.max_samples
+        self.dut_d_data = [0.0] * self.max_samples
+        
+        # Update plot to show cleared data
+        self._update_plot()
     
     def _send_configuration_commands(self):
         """Send configuration commands to device without UI feedback."""

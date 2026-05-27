@@ -19,6 +19,7 @@ The menu ribbon has the following options:
 1) Droplist of connected serial devices: allows to select a serial port to connect to.
 2) Refresh button: populates the droplist of connected devices.
 3) Connect/Disconnect button: It either connects or disconnects the device. Button text changes accordingly.
+4) Clear button: clears all data currently in the buffer
 
 ## 2. Graphing area
 This is the largest area in the app. Located to the right of Numerical displays and Configuration panel and below the Top menu ribbon. It contains a single plot with 4 data series, which show the following 4 fields

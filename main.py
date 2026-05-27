@@ -53,9 +53,17 @@ class SerialManager:
         self.reader_thread = None
         
     def list_ports(self):
-        """Return list of available serial ports."""
-        ports = serial.tools.list_ports.comports()
-        return [port.device for port in ports]
+        """Return list of available serial ports, filtered to active USB/CDC devices."""
+        all_ports = serial.tools.list_ports.comports()
+        active_ports = []
+        for port in all_ports:
+            # Include port if it has USB PID/VID (actual connected USB device)
+            if hasattr(port, 'pid') and port.pid and hasattr(port, 'vid') and port.vid:
+                active_ports.append(port.device)
+            # On Linux, also include ttyACM and ttyUSB devices (CDC-ACM class)
+            elif port.device and ('/dev/ttyACM' in port.device or '/dev/ttyUSB' in port.device):
+                active_ports.append(port.device)
+        return active_ports
     
     def connect(self, port_name, baudrate=115200, timeout=1):
         """Connect to a serial port."""

@@ -251,7 +251,8 @@ class LantanGUI:
         
         # Data storage
         self.serial_manager = SerialManager()
-        self.max_samples = 200
+        self.max_samples = 10000  # Always store up to 10000 samples in buffer
+        self.display_samples = tk.IntVar(value=200)  # Number of samples to display (10-10000)
         self.sample_count = 0
         self.time_data = []
         self.dut_a_data = []
@@ -654,6 +655,34 @@ class LantanGUI:
             
             row_offset += 3
         
+        # Display samples slider (logarithmic: 10 to 10000)
+        ttk.Label(config_frame, text="Samples to display:").grid(
+            row=row_offset, column=0, columnspan=4, sticky=tk.W, padx=5, pady=(10, 2)
+        )
+        def update_samples_display(val):
+            self.display_samples.set(int(float(val)))
+            self._update_plot(from_new_data=False)
+        
+        samples_slider = ttk.Scale(
+            config_frame,
+            from_=10,
+            to=10000,
+            variable=self.display_samples,
+            orient=tk.HORIZONTAL,
+            length=200,
+            command=update_samples_display
+        )
+        samples_slider.grid(row=row_offset+1, column=0, columnspan=4, sticky=tk.EW, padx=5, pady=2)
+        
+        # Value label for samples
+        samples_value_label = ttk.Label(
+            config_frame,
+            textvariable=self.display_samples
+        )
+        samples_value_label.grid(row=row_offset+2, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(0, 10))
+        
+        row_offset += 3
+        
         # Update configuration button
         update_btn = ttk.Button(
             config_frame,
@@ -706,8 +735,8 @@ class LantanGUI:
         self.dut_c_data = [0.0] * self.max_samples
         self.dut_d_data = [0.0] * self.max_samples
         
-        # Update plot to show cleared data
-        self._update_plot()
+        # Update plot to show cleared data (no new data to add)
+        self._update_plot(from_new_data=False)
     
     def _send_configuration_commands(self):
         """Send configuration commands to device without UI feedback."""
@@ -752,7 +781,7 @@ class LantanGUI:
                     self.last_update = parsed
                     # Trigger UI update on main thread
                     self.root.after(0, self._update_display)
-                    self.root.after(0, self._update_plot)
+                    self.root.after(0, lambda: self._update_plot(from_new_data=True))
             except queue.Empty:
                 continue
             except Exception as e:
@@ -792,8 +821,8 @@ class LantanGUI:
             else:
                 var.set(str(value))
     
-    def _update_plot(self):
-        """Update plot with new data."""
+    def _add_new_data(self):
+        """Add new data from last update to buffer."""
         if not self.last_update:
             return
         
@@ -814,21 +843,45 @@ class LantanGUI:
         self.dut_c_data.append(dut_c)
         self.dut_d_data.append(dut_d)
         
-        # Trim to max_samples
+        # Trim to max_samples (always keep 10000 in buffer)
         if len(self.dut_a_data) > self.max_samples:
             self.dut_a_data = self.dut_a_data[-self.max_samples:]
             self.dut_b_data = self.dut_b_data[-self.max_samples:]
             self.dut_c_data = self.dut_c_data[-self.max_samples:]
             self.dut_d_data = self.dut_d_data[-self.max_samples:]
             self.sample_count = self.max_samples
+    
+    def _update_plot(self, from_new_data=False):
+        """Update plot with current buffer data.
         
-        # Update plot data
-        x_data = list(range(len(self.dut_a_data)))
+        Args:
+            from_new_data: If True, also add new data to buffer before plotting
+        """
+        if from_new_data:
+            self._add_new_data()
         
-        self.line_a.set_data(x_data, self.dut_a_data)
-        self.line_b.set_data(x_data, self.dut_b_data)
-        self.line_c.set_data(x_data, self.dut_c_data)
-        self.line_d.set_data(x_data, self.dut_d_data)
+        if not self.dut_a_data:
+            return
+        
+        # Get number of samples to display from slider
+        num_display = self.display_samples.get()
+        
+        # Use only the last num_display samples for plotting
+        start_idx = max(0, len(self.dut_a_data) - num_display)
+        
+        plot_a = self.dut_a_data[start_idx:]
+        plot_b = self.dut_b_data[start_idx:]
+        plot_c = self.dut_c_data[start_idx:]
+        plot_d = self.dut_d_data[start_idx:]
+        
+        # Use relative x-axis matching actual data length to prevent replication
+        actual_display = len(plot_a)
+        x_data = list(range(actual_display))
+        
+        self.line_a.set_data(x_data, plot_a)
+        self.line_b.set_data(x_data, plot_b)
+        self.line_c.set_data(x_data, plot_c)
+        self.line_d.set_data(x_data, plot_d)
         
         # Adjust view
         self.ax.relim()

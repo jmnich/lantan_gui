@@ -85,11 +85,13 @@ class SerialManager:
             try:
                 if self.serial_conn.in_waiting:
                     data = self.serial_conn.read_all().decode('ascii', errors='ignore')
+                    # Normalize line endings: handle \r\n, \n, or \r
+                    data = data.replace('\r\n', '\n').replace('\r', '\n')
                     buffer += data
                     
-                    # Parse complete messages (end with \r\n)
-                    while '\r\n' in buffer:
-                        msg, buffer = buffer.split('\r\n', 1)
+                    # Parse complete messages (end with \n)
+                    while '\n' in buffer:
+                        msg, buffer = buffer.split('\n', 1)
                         msg = msg.strip()
                         if msg:
                             self.message_queue.put(msg)
@@ -190,7 +192,7 @@ class LantanGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Lantan GUI")
-        self.root.geometry("1200x800")
+        self.root.geometry("2000x1200")
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         
         # Data storage
@@ -532,7 +534,6 @@ class LantanGUI:
             return
         
         self._send_configuration_commands()
-        messagebox.showinfo("Info", "Configuration updated!")
     
     def _process_messages(self):
         """Process incoming messages from serial port."""
@@ -540,7 +541,7 @@ class LantanGUI:
             try:
                 msg = self.serial_manager.message_queue.get(timeout=0.1)
                 parsed = self.serial_manager.parse_update_message(msg)
-                if parsed and hasattr(self, 'root') and self.root.winfo_exists():
+                if parsed:
                     self.last_update = parsed
                     # Trigger UI update on main thread
                     self.root.after(0, self._update_display)

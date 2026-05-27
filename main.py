@@ -19,6 +19,28 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 import tkinter as tk
 from tkinter import ttk, messagebox
 
+# Configure matplotlib with Nord dark theme
+plt.style.use('dark_background')
+# Nord color palette
+nord_bg = '#2e3440'
+nord_fg = '#d8dee9'
+nord_blue = '#88c0d0'
+nord_green = '#a3be8c'
+nord_red = '#bf616a'
+nord_purple = '#b48ead'
+plt.rcParams['figure.facecolor'] = nord_bg
+plt.rcParams['axes.facecolor'] = nord_bg
+plt.rcParams['axes.edgecolor'] = '#3b4252'
+plt.rcParams['axes.labelcolor'] = nord_fg
+plt.rcParams['axes.titlecolor'] = nord_fg
+plt.rcParams['xtick.color'] = nord_fg
+plt.rcParams['ytick.color'] = nord_fg
+plt.rcParams['legend.facecolor'] = nord_bg
+plt.rcParams['legend.labelcolor'] = nord_fg
+plt.rcParams['legend.edgecolor'] = '#3b4252'
+plt.rcParams['grid.color'] = '#3b4252'
+plt.rcParams['text.color'] = nord_fg
+
 
 class SerialManager:
     """Manages serial communication with the device."""
@@ -195,6 +217,12 @@ class LantanGUI:
         self.root.geometry("2000x1200")
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         
+        # Launch in maximized window mode
+        self.root.state('zoomed')
+        
+        # Apply dark theme
+        self._apply_dark_theme()
+        
         # Data storage
         self.serial_manager = SerialManager()
         self.max_samples = 200
@@ -236,6 +264,92 @@ class LantanGUI:
         
         # Start update timer
         self._start_update_timer()
+    
+    def _apply_dark_theme(self):
+        """Apply Nord dark theme to Tkinter and matplotlib."""
+        # Nord color palette
+        nord_bg = '#2e3440'
+        nord_bg2 = '#3b4252'
+        nord_bg3 = '#434c5e'
+        nord_fg = '#d8dee9'
+        nord_fg2 = '#e5e9f0'
+        nord_blue = '#88c0d0'
+        nord_green = '#a3be8c'
+        nord_red = '#bf616a'
+        nord_purple = '#b48ead'
+        nord_orange = '#d08770'
+        nord_yellow = '#ebcb8b'
+        
+        # Configure root window
+        self.root.configure(bg=nord_bg)
+        
+        # Configure ttk style
+        style = ttk.Style()
+        style.theme_use('clam')  # Use clam as base theme (most customizable)
+        
+        # Configure colors for all widget types
+        style.configure('.', 
+            background=nord_bg,
+            foreground=nord_fg,
+            bordercolor=nord_bg,
+            darkcolor=nord_bg,
+            lightcolor=nord_bg2)
+        
+        # Frame
+        style.configure('TFrame', background=nord_bg)
+        style.configure('TLabelFrame', background=nord_bg, foreground=nord_fg)
+        style.configure('TLabelFrame.Label', background=nord_bg, foreground=nord_fg)
+        
+        # Labels
+        style.configure('TLabel', background=nord_bg, foreground=nord_fg)
+        
+        # Buttons
+        style.configure('TButton', 
+            background=nord_bg3,
+            foreground=nord_fg,
+            bordercolor=nord_bg3,
+            darkcolor=nord_bg3,
+            lightcolor=nord_bg3)
+        style.map('TButton', 
+            background=[('active', nord_bg2), ('pressed', nord_bg)],
+            foreground=[('active', nord_fg), ('pressed', nord_fg)])
+        
+        # Combobox
+        style.configure('TCombobox', 
+            background=nord_bg3,
+            foreground=nord_fg,
+            fieldbackground=nord_bg2,
+            selectbackground=nord_blue,
+            selectforeground=nord_fg)
+        style.map('TCombobox', 
+            fieldbackground=[('readonly', nord_bg2)],
+            background=[('readonly', nord_bg3)],
+            foreground=[('readonly', nord_fg)])
+        
+        # Checkbuttons
+        style.configure('TCheckbutton', 
+            background=nord_bg,
+            foreground=nord_fg)
+        style.map('TCheckbutton',
+            background=[('active', nord_bg2), ('pressed', nord_bg)],
+            foreground=[('active', nord_fg), ('pressed', nord_fg)])
+        
+        # Scale
+        style.configure('Horizontal.TScale', 
+            background=nord_bg,
+            troughcolor=nord_bg2,
+            foreground=nord_fg)
+        
+        # Notebook (if used)
+        style.configure('TNotebook', background=nord_bg)
+        style.configure('TNotebook.Tab', background=nord_bg2, foreground=nord_fg)
+        style.map('TNotebook.Tab', 
+            background=[('selected', nord_bg3)],
+            foreground=[('selected', nord_fg)])
+        
+        # Configure matplotlib figure background
+        self.root.option_add('*background', nord_bg)
+        self.root.option_add('*foreground', nord_fg)
     
     def _create_ui(self):
         """Create all UI components."""
@@ -314,17 +428,29 @@ class LantanGUI:
         self.dut_c_data = [0.0] * self.max_samples
         self.dut_d_data = [0.0] * self.max_samples
         
-        # Plot lines
-        self.line_a, = self.ax.plot([], [], 'r-', label='DUT Response A')
-        self.line_b, = self.ax.plot([], [], 'g-', label='DUT Response B')
-        self.line_c, = self.ax.plot([], [], 'b-', label='DUT Response C')
-        self.line_d, = self.ax.plot([], [], 'm-', label='DUT Response D')
+        # Plot lines with Nord palette colors for dark background
+        self.line_a, = self.ax.plot([], [], color=nord_red, linewidth=2, label='DUT Response A')
+        self.line_b, = self.ax.plot([], [], color=nord_green, linewidth=2, label='DUT Response B')
+        self.line_c, = self.ax.plot([], [], color=nord_blue, linewidth=2, label='DUT Response C')
+        self.line_d, = self.ax.plot([], [], color=nord_purple, linewidth=2, label='DUT Response D')
         
-        self.ax.set_xlabel('Sample')
-        self.ax.set_ylabel('Intensity (a.u.)')
-        self.ax.set_title('DUT Responses')
-        self.ax.legend()
-        self.ax.grid(True)
+        self.ax.set_xlabel('Sample', color=nord_fg)
+        self.ax.set_ylabel('Intensity (a.u.)', color=nord_fg)
+        self.ax.set_title('DUT Responses', color=nord_fg, pad=20)
+        
+        # Configure legend for Nord theme
+        legend = self.ax.legend(facecolor=nord_bg, edgecolor='#3b4252', labelcolor=nord_fg)
+        legend.get_frame().set_alpha(0.8)
+        
+        # Configure grid and ticks for Nord theme
+        self.ax.grid(True, color='#3b4252', alpha=0.5, linestyle='--')
+        self.ax.tick_params(colors=nord_fg)
+        
+        # Set axis colors for Nord theme
+        self.ax.spines['bottom'].set_color('#3b4252')
+        self.ax.spines['top'].set_color('#3b4252')
+        self.ax.spines['left'].set_color('#3b4252')
+        self.ax.spines['right'].set_color('#3b4252')
         
         # Embed in Tkinter
         self.canvas = FigureCanvasTkAgg(self.fig, master=graph_frame)
@@ -439,30 +565,36 @@ class LantanGUI:
         )
         gain_combo.grid(row=3, column=1, sticky=tk.W, padx=5, pady=2)
         
-        # Modulation intensity sliders
+        # Modulation intensity sliders - stacked vertically
         ttk.Label(config_frame, text="Modulation Intensity:").grid(
-            row=4, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2
+            row=4, column=0, columnspan=4, sticky=tk.W, padx=5, pady=2
         )
         
-        for i, ch in enumerate(['A', 'B', 'C', 'D']):
-            ttk.Label(config_frame, text=f"{ch}:").grid(
-                row=5, column=i, sticky=tk.W, padx=5, pady=2
+        row_offset = 5
+        for ch in ['A', 'B', 'C', 'D']:
+            # Channel label
+            ttk.Label(config_frame, text=f"Channel {ch}:").grid(
+                row=row_offset, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2
             )
+            # Slider
             slider = ttk.Scale(
                 config_frame,
                 from_=0,
                 to=100,
                 variable=self.mod_intensity[ch],
                 orient=tk.HORIZONTAL,
-                length=100
+                length=200
             )
-            slider.grid(row=6, column=i, sticky=tk.W, padx=5, pady=2)
+            slider.grid(row=row_offset+1, column=0, columnspan=4, sticky=tk.EW, padx=5, pady=2)
             
+            # Value label
             value_label = ttk.Label(
                 config_frame,
                 textvariable=self.mod_intensity[ch]
             )
-            value_label.grid(row=7, column=i, sticky=tk.W, padx=5, pady=2)
+            value_label.grid(row=row_offset+2, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(0, 10))
+            
+            row_offset += 3
         
         # Update configuration button
         update_btn = ttk.Button(
@@ -471,7 +603,7 @@ class LantanGUI:
             command=self._update_configuration
         )
         update_btn.grid(
-            row=8, column=0, columnspan=4, pady=10
+            row=row_offset, column=0, columnspan=4, pady=10
         )
     
     def _refresh_ports(self):

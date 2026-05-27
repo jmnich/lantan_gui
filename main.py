@@ -497,6 +497,33 @@ class LantanGUI:
         self.toolbar = NavigationToolbar2Tk(self.canvas, graph_frame)
         self.toolbar.update()
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        
+        # Samples to display slider (below the graph)
+        slider_frame = ttk.Frame(graph_frame)
+        slider_frame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
+        
+        ttk.Label(slider_frame, text="Samples to display:").pack(side=tk.LEFT, padx=5)
+        
+        def update_samples_display(val):
+            self.display_samples.set(int(float(val)))
+            self._update_plot(from_new_data=False)
+        
+        samples_slider = ttk.Scale(
+            slider_frame,
+            from_=10,
+            to=10000,
+            variable=self.display_samples,
+            orient=tk.HORIZONTAL,
+            length=200,
+            command=update_samples_display
+        )
+        samples_slider.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+        
+        samples_value_label = ttk.Label(
+            slider_frame,
+            textvariable=self.display_samples
+        )
+        samples_value_label.pack(side=tk.LEFT, padx=5)
     
     def _create_numerical_displays(self):
         """Create numerical displays section with 2 columns.
@@ -654,34 +681,6 @@ class LantanGUI:
             value_label.grid(row=row_offset+2, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(0, 10))
             
             row_offset += 3
-        
-        # Display samples slider (logarithmic: 10 to 10000)
-        ttk.Label(config_frame, text="Samples to display:").grid(
-            row=row_offset, column=0, columnspan=4, sticky=tk.W, padx=5, pady=(10, 2)
-        )
-        def update_samples_display(val):
-            self.display_samples.set(int(float(val)))
-            self._update_plot(from_new_data=False)
-        
-        samples_slider = ttk.Scale(
-            config_frame,
-            from_=10,
-            to=10000,
-            variable=self.display_samples,
-            orient=tk.HORIZONTAL,
-            length=200,
-            command=update_samples_display
-        )
-        samples_slider.grid(row=row_offset+1, column=0, columnspan=4, sticky=tk.EW, padx=5, pady=2)
-        
-        # Value label for samples
-        samples_value_label = ttk.Label(
-            config_frame,
-            textvariable=self.display_samples
-        )
-        samples_value_label.grid(row=row_offset+2, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(0, 10))
-        
-        row_offset += 3
         
         # Update configuration button
         update_btn = ttk.Button(

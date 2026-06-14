@@ -772,6 +772,10 @@ class LantanGUI:
     def _toggle_connect(self):
         """Toggle connection to serial port."""
         if self.serial_manager.is_connected:
+            # Send command to disable all channels before disconnecting
+            mod_cmd = ['0', '0', '0', '0', 0, 0, 0, 0]
+            self.serial_manager.send_command('MODULATOR', *mod_cmd)
+            
             self.serial_manager.disconnect()
             self.connect_btn.config(text="Connect")
             self.status_label.config(text="Disconnected")

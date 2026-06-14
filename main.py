@@ -7,6 +7,7 @@ Controls an external USB device via CDC serial port with live data visualization
 import sys
 import threading
 import queue
+import csv
 import serial
 import serial.tools.list_ports
 from datetime import datetime
@@ -17,7 +18,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 
 # Configure matplotlib with Nord dark theme
 plt.style.use('dark_background')
@@ -488,6 +489,14 @@ class LantanGUI:
         )
         self.clear_btn.pack(side=tk.LEFT, padx=5)
         
+        # Save Data button
+        self.save_btn = ttk.Button(
+            self.menu_frame,
+            text="Save Data",
+            command=self._save_data
+        )
+        self.save_btn.pack(side=tk.LEFT, padx=5)
+        
         # Connection status label
         self.status_label = ttk.Label(self.menu_frame, text="Disconnected")
         self.status_label.pack(side=tk.LEFT, padx=10)
@@ -524,9 +533,9 @@ class LantanGUI:
         self.line_c, = self.ax.plot([], [], color=nord_blue, linewidth=2, label='DUT Response C')
         self.line_d, = self.ax.plot([], [], color=nord_purple, linewidth=2, label='DUT Response D')
         
-        self.ax.set_xlabel('Sample', color=nord_fg)
+        self.ax.set_xlabel('Sample number', color=nord_fg)
         self.ax.set_ylabel('Intensity (a.u.)', color=nord_fg)
-        self.ax.set_title('DUT Responses', color=nord_fg, pad=20)
+        # self.ax.set_title('DUT Responses', color=nord_fg, pad=20)
         
         # Configure legend for Nord theme
         legend = self.ax.legend(facecolor=nord_bg, edgecolor='#3b4252', labelcolor=nord_fg)
@@ -822,6 +831,50 @@ class LantanGUI:
         
         # Update plot to show cleared data (no new data to add)
         self._update_plot(from_new_data=False)
+    
+    def _save_data(self):
+        """Save all stored data to a CSV file."""
+        if not self.dut_a_data:
+            messagebox.showinfo("Info", "No data to save.")
+            return
+        
+        # Get file path from save dialog
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+            title="Save Data"
+        )
+        
+        if not file_path:
+            return  # User cancelled
+        
+        try:
+            with open(file_path, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                
+                # Write header
+                writer.writerow(['Sample', 'DUT Response A', 'DUT Response B', 'DUT Response C', 'DUT Response D'])
+                
+                # Write data rows (newest first, so reverse order)
+                # Use min length to handle case where data lists might have different lengths
+                min_length = min(len(self.dut_a_data), len(self.dut_b_data), 
+                                  len(self.dut_c_data), len(self.dut_d_data))
+                
+                # Start from the end and go backwards to get newest first
+                for i in range(min_length - 1, -1, -1):
+                    # Calculate sample number from the original position
+                    sample_num = min_length - i
+                    writer.writerow([
+                        sample_num,
+                        self.dut_a_data[i],
+                        self.dut_b_data[i],
+                        self.dut_c_data[i],
+                        self.dut_d_data[i]
+                    ])
+            
+            messagebox.showinfo("Success", f"Data saved to {file_path}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save data: {e}")
     
     def _send_configuration_commands(self):
         """Send configuration commands to device without UI feedback."""

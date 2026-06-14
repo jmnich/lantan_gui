@@ -372,6 +372,16 @@ class LantanGUI:
             troughcolor=nord_bg2,
             foreground=nord_fg)
         
+        # Scrollbar - match Nord dark theme
+        style.configure('Vertical.TScrollbar',
+            background=nord_bg2,
+            troughcolor=nord_bg2,
+            bordercolor=nord_bg2,
+            arrowcolor=nord_fg)
+        style.map('Vertical.TScrollbar',
+            background=[('active', nord_bg3), ('pressed', nord_bg2)],
+            troughcolor=[('active', nord_bg3), ('pressed', nord_bg2)])
+        
         # Notebook (if used)
         style.configure('TNotebook', background=nord_bg)
         style.configure('TNotebook.Tab', background=nord_bg2, foreground=nord_fg)
@@ -389,9 +399,42 @@ class LantanGUI:
         self.menu_frame = ttk.Frame(self.root)
         self.menu_frame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
         
+        # Create a container frame for left and right panels
+        # This allows us to use grid layout for fixed/expandable sizing
+        self.main_container = ttk.Frame(self.root)
+        self.main_container.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Configure grid: left has fixed width, right expands
+        self.main_container.grid_columnconfigure(0, minsize=450)  # Fixed width for left panel
+        self.main_container.grid_columnconfigure(1, weight=1)  # Right panel expands
+        self.main_container.grid_rowconfigure(0, weight=1)
+        
         # Left panel for numerical displays and configuration
-        self.left_panel = ttk.Frame(self.root)
-        self.left_panel.pack(side=tk.LEFT, fill=tk.BOTH, padx=5, pady=5)
+        # Create a scrollable frame for the left panel
+        self.left_panel_frame = ttk.Frame(self.main_container)
+        self.left_panel_frame.grid(row=0, column=0, sticky=tk.NSEW, padx=(5, 0), pady=5)
+        
+        # Create canvas for scrolling
+        self.left_canvas = tk.Canvas(self.left_panel_frame, bg=nord_bg, highlightthickness=0)
+        self.left_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Add scrollbar
+        self.left_scrollbar = ttk.Scrollbar(self.left_panel_frame, orient=tk.VERTICAL, command=self.left_canvas.yview)
+        self.left_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.left_canvas.configure(yscrollcommand=self.left_scrollbar.set)
+        
+        # Frame inside canvas to hold the actual content
+        self.left_panel = ttk.Frame(self.left_canvas)
+        self.left_canvas.create_window((0, 0), window=self.left_panel, anchor=tk.NW)
+        
+        # Bind scroll wheel to canvas and left panel frame for smoother scrolling
+        self.left_canvas.bind("<MouseWheel>", self._on_left_panel_scroll)
+        self.left_panel.bind("<MouseWheel>", self._on_left_panel_scroll)
+        self.left_panel_frame.bind("<MouseWheel>", self._on_left_panel_scroll)
+        self.left_scrollbar.bind("<MouseWheel>", self._on_left_panel_scroll)
+        
+        # Bind configure event to update scroll region
+        self.left_panel.bind("<Configure>", self._update_left_panel_scrollregion)
         
         # Create menu ribbon
         self._create_menu_ribbon()
@@ -454,9 +497,11 @@ class LantanGUI:
     
     def _create_graph_area(self):
         """Create graphing area with matplotlib."""
-        # Graph frame
-        graph_frame = ttk.Frame(self.root)
-        graph_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # Graph frame - use main_container grid
+        graph_frame = ttk.Frame(self.main_container)
+        graph_frame.grid(row=0, column=1, sticky=tk.NSEW, padx=(0, 5), pady=5)
+        graph_frame.grid_columnconfigure(0, weight=1)
+        graph_frame.grid_rowconfigure(0, weight=1)
         
         # Configure graph_frame to use grid layout for better control
         graph_frame.grid_columnconfigure(0, weight=1)
@@ -620,7 +665,7 @@ class LantanGUI:
         )
         config_frame.pack(side=tk.TOP, fill=tk.X, pady=5)
         
-        # Channel enable checkboxes
+        # Channel enable checkboxes - arranged vertically to fit better
         ttk.Label(config_frame, text="Channels:").grid(
             row=0, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2
         )
@@ -633,11 +678,11 @@ class LantanGUI:
                 onvalue=True,
                 offvalue=False
             )
-            cb.grid(row=1, column=i, sticky=tk.W, padx=5, pady=2)
+            cb.grid(row=1+i, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2)
         
         # Detector sensitivity
         ttk.Label(config_frame, text="Detector Sensitivity:").grid(
-            row=2, column=0, sticky=tk.W, padx=5, pady=2
+            row=5, column=0, sticky=tk.W, padx=5, pady=2
         )
         sens_combo = ttk.Combobox(
             config_frame,
@@ -646,11 +691,11 @@ class LantanGUI:
             state="readonly",
             width=5
         )
-        sens_combo.grid(row=2, column=1, sticky=tk.W, padx=5, pady=2)
+        sens_combo.grid(row=5, column=1, sticky=tk.W, padx=5, pady=2)
         
         # Detector gain
         ttk.Label(config_frame, text="Detector Gain:").grid(
-            row=3, column=0, sticky=tk.W, padx=5, pady=2
+            row=6, column=0, sticky=tk.W, padx=5, pady=2
         )
         gain_combo = ttk.Combobox(
             config_frame,
@@ -659,14 +704,14 @@ class LantanGUI:
             state="readonly",
             width=5
         )
-        gain_combo.grid(row=3, column=1, sticky=tk.W, padx=5, pady=2)
+        gain_combo.grid(row=6, column=1, sticky=tk.W, padx=5, pady=2)
         
         # Modulation intensity sliders - stacked vertically
         ttk.Label(config_frame, text="Modulation Intensity:").grid(
-            row=4, column=0, columnspan=4, sticky=tk.W, padx=5, pady=2
+            row=7, column=0, columnspan=4, sticky=tk.W, padx=5, pady=2
         )
         
-        row_offset = 5
+        row_offset = 8
         for ch in ['A', 'B', 'C', 'D']:
             # Channel label
             ttk.Label(config_frame, text=f"Channel {ch}:").grid(
@@ -747,6 +792,17 @@ class LantanGUI:
         self.y_scale_mode.set(new_mode)
         # Force a plot update to apply the new scale
         self._update_plot(from_new_data=False)
+    
+    def _on_left_panel_scroll(self, event):
+        """Handle scroll wheel for left panel."""
+        # Only scroll if mouse is over the left panel area
+        if self.left_canvas.winfo_containing(event.x_root, event.y_root) == self.left_canvas:
+            self.left_canvas.yview_scroll(-1 * (event.delta // 120), tk.UNITS)
+        return "break"
+    
+    def _update_left_panel_scrollregion(self, event):
+        """Update scroll region when left panel content size changes."""
+        self.left_canvas.configure(scrollregion=self.left_canvas.bbox("all"))
     
     def _clear_data(self):
         """Clear all data buffers."""

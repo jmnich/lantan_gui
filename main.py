@@ -458,9 +458,13 @@ class LantanGUI:
         graph_frame = ttk.Frame(self.root)
         graph_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
         
+        # Configure graph_frame to use grid layout for better control
+        graph_frame.grid_columnconfigure(0, weight=1)
+        graph_frame.grid_rowconfigure(0, weight=1)
+        graph_frame.grid_rowconfigure(1, weight=0)  # Slider row doesn't expand
+        
         # Create matplotlib figure
         self.fig, self.ax = plt.subplots(figsize=(10, 6), dpi=100)
-        self.fig.tight_layout()
         
         # Initialize data
         self.time_data = list(range(self.max_samples))
@@ -496,16 +500,11 @@ class LantanGUI:
         # Embed in Tkinter
         self.canvas = FigureCanvasTkAgg(self.fig, master=graph_frame)
         self.canvas.draw()
-        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        
-        # Optional toolbar
-        self.toolbar = NavigationToolbar2Tk(self.canvas, graph_frame)
-        self.toolbar.update()
-        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.canvas.get_tk_widget().grid(row=0, column=0, sticky=tk.NSEW)
         
         # Samples to display slider (below the graph)
         slider_frame = ttk.Frame(graph_frame)
-        slider_frame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
+        slider_frame.grid(row=1, column=0, sticky=tk.EW, padx=5, pady=5)
         
         ttk.Label(slider_frame, text="Samples to display:").pack(side=tk.LEFT, padx=5)
         
@@ -937,6 +936,9 @@ class LantanGUI:
         # Adjust view
         self.ax.relim()
         self.ax.autoscale_view(scaley=True)
+        
+        # Apply tight layout with padding to prevent label clipping on resize
+        self.fig.tight_layout(pad=3.0)
         
         # Redraw canvas
         self.canvas.draw()

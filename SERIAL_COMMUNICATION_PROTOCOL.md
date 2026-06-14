@@ -2,7 +2,7 @@
 
 **Application:** Lantan GUI  
 **Interface:** Serial Port (RS-232/RS-485/USB)  
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 
 ---
 
@@ -77,6 +77,7 @@ dut response C: intensity in arbitrary unit
 dut response D: intensity in arbitrary unit
 detector sensitivity: integer value (1,2,3 or 4)
 detector gain: integer value (1,2,3 or 4)
+detector out of range flag: integer value (0 or 1)
 
 ### direction: PC -> serial device
 

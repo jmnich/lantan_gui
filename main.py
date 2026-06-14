@@ -202,6 +202,7 @@ class SerialManager:
             # Detector config
             detector_sensitivity = int(parts[22]) if len(parts) > 22 else 1
             detector_gain = int(parts[23]) if len(parts) > 23 else 1
+            detector_out_of_range = int(parts[24]) if len(parts) > 24 else 0
             
             return {
                 'power_good': power_good,
@@ -227,6 +228,7 @@ class SerialManager:
                 'dut_response_d': dut_response_d,
                 'detector_sensitivity': detector_sensitivity,
                 'detector_gain': detector_gain,
+                'detector_out_of_range': detector_out_of_range,
             }
         except (ValueError, IndexError) as e:
             print(f"Failed to parse UPDATE message: {e}")
@@ -259,6 +261,9 @@ class LantanGUI:
         self.dut_b_data = []
         self.dut_c_data = []
         self.dut_d_data = []
+        
+        # Y-axis scale mode: 'linear' or 'log'
+        self.y_scale_mode = tk.StringVar(value='linear')
         
         # Configuration state
         self.channels_enabled = {
@@ -524,6 +529,14 @@ class LantanGUI:
             textvariable=self.display_samples
         )
         samples_value_label.pack(side=tk.LEFT, padx=5)
+        
+        # Y-axis scale toggle button
+        self.scale_btn = ttk.Button(
+            slider_frame,
+            textvariable=self.y_scale_mode,
+            command=self._toggle_y_scale
+        )
+        self.scale_btn.pack(side=tk.LEFT, padx=5)
     
     def _create_numerical_displays(self):
         """Create numerical displays section with 2 columns.
@@ -540,6 +553,7 @@ class LantanGUI:
         
         # Field names and values for display
         self.display_labels = {}
+        self.display_label_widgets = {}
         
         # Left column fields (all except Voltage, Current, and DUT Resp)
         left_column_fields = [
@@ -554,6 +568,7 @@ class LantanGUI:
             ('Mod Amp D (mA)', 'mod_amp_d'),
             ('Det. Sensitivity', 'detector_sensitivity'),
             ('Det. Gain', 'detector_gain'),
+            ('Det. Out of Range', 'detector_out_of_range'),
         ]
         
         # Right column fields: Voltage, Current, and DUT Resp
@@ -583,6 +598,7 @@ class LantanGUI:
             value_label.grid(row=row, column=1, sticky=tk.E, padx=5, pady=2)
             
             self.display_labels[field_key] = value_var
+            self.display_label_widgets[field_key] = value_label
         
         # Right column (grid columns 2-3)
         for row, (label_text, field_key) in enumerate(right_column_fields):
@@ -594,6 +610,7 @@ class LantanGUI:
             value_label.grid(row=row, column=3, sticky=tk.E, padx=5, pady=2)
             
             self.display_labels[field_key] = value_var
+            self.display_label_widgets[field_key] = value_label
     
     def _create_configuration_panel(self):
         """Create configuration panel."""
@@ -724,6 +741,14 @@ class LantanGUI:
             else:
                 messagebox.showerror("Error", f"Failed to connect to {port}")
     
+    def _toggle_y_scale(self):
+        """Toggle Y-axis scale between linear and log."""
+        current = self.y_scale_mode.get()
+        new_mode = 'log' if current == 'linear' else 'linear'
+        self.y_scale_mode.set(new_mode)
+        # Force a plot update to apply the new scale
+        self._update_plot(from_new_data=False)
+    
     def _clear_data(self):
         """Clear all data buffers."""
         # Reset data lists
@@ -733,6 +758,12 @@ class LantanGUI:
         self.dut_b_data = [0.0] * self.max_samples
         self.dut_c_data = [0.0] * self.max_samples
         self.dut_d_data = [0.0] * self.max_samples
+        
+        # Reset all display values to N/A and reset detector out of range color
+        for key, var in self.display_labels.items():
+            var.set("N/A")
+            if key in self.display_label_widgets and key == 'detector_out_of_range':
+                self.display_label_widgets[key].config(foreground=nord_fg)
         
         # Update plot to show cleared data (no new data to add)
         self._update_plot(from_new_data=False)
@@ -791,6 +822,7 @@ class LantanGUI:
         """Update numerical displays with last received data.
         
         Converts uV to mV and uA to mA, formats to 1 decimal place.
+        Converts detector_out_of_range flag to 'In range' or 'OUT OF RANGE' with red color.
         """
         if not self.last_update:
             return
@@ -809,7 +841,23 @@ class LantanGUI:
         # Update all display fields
         for key, var in self.display_labels.items():
             value = data.get(key, "N/A")
-            if isinstance(value, (int, float)):
+            
+            # Special handling for detector out of range flag
+            if key == 'detector_out_of_range':
+                if isinstance(value, (int, float)):
+                    if value == 1:
+                        display_text = "OUT OF RANGE"
+                        color = nord_red
+                    else:
+                        display_text = "In range"
+                        color = nord_fg
+                    var.set(display_text)
+                    # Update the label widget color
+                    if key in self.display_label_widgets:
+                        self.display_label_widgets[key].config(foreground=color)
+                else:
+                    var.set(str(value))
+            elif isinstance(value, (int, float)):
                 # Apply unit conversions
                 if key in voltage_fields:
                     value = value / uV_to_mV
@@ -881,6 +929,10 @@ class LantanGUI:
         self.line_b.set_data(x_data, plot_b)
         self.line_c.set_data(x_data, plot_c)
         self.line_d.set_data(x_data, plot_d)
+        
+        # Set Y-axis scale based on mode
+        scale_mode = self.y_scale_mode.get()
+        self.ax.set_yscale(scale_mode)
         
         # Adjust view
         self.ax.relim()

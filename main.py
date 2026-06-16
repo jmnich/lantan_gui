@@ -614,11 +614,12 @@ class LantanGUI:
             text="Numerical Displays",
             labelanchor=tk.N
         )
-        num_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=5)
-        num_frame.grid_columnconfigure(0, weight=1, minsize=150)
-        num_frame.grid_columnconfigure(1, weight=1, minsize=80)
-        num_frame.grid_columnconfigure(2, weight=1, minsize=150)
-        num_frame.grid_columnconfigure(3, weight=1, minsize=80)
+        num_frame.pack(side=tk.TOP, fill=tk.X, pady=5)
+        # Set a minimum width for the num_frame to ensure labels don't get clipped
+        num_frame.grid_columnconfigure(0, weight=0, minsize=220)
+        num_frame.grid_columnconfigure(1, weight=0, minsize=100)
+        num_frame.grid_columnconfigure(2, weight=0, minsize=220)
+        num_frame.grid_columnconfigure(3, weight=0, minsize=100)
         
         # Field names and values for display
         self.display_labels = {}

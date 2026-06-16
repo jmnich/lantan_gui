@@ -615,10 +615,10 @@ class LantanGUI:
             labelanchor=tk.N
         )
         num_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=5)
-        num_frame.grid_columnconfigure(0, weight=1)
-        num_frame.grid_columnconfigure(1, weight=1)
-        num_frame.grid_columnconfigure(2, weight=1)
-        num_frame.grid_columnconfigure(3, weight=1)
+        num_frame.grid_columnconfigure(0, weight=1, minsize=150)
+        num_frame.grid_columnconfigure(1, weight=1, minsize=80)
+        num_frame.grid_columnconfigure(2, weight=1, minsize=150)
+        num_frame.grid_columnconfigure(3, weight=1, minsize=80)
         
         # Field names and values for display
         self.display_labels = {}

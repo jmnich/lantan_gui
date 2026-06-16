@@ -635,20 +635,43 @@ class LantanGUI:
         Left column: Power Good, Channel states, Mod Amp, DUT Resp, Detector
         Right column: Voltage A-D, Current A-D
         """
-        num_frame = ttk.LabelFrame(
+        self.num_frame = ttk.LabelFrame(
             self.left_panel,
             text="Numerical Displays",
             labelanchor=tk.N
         )
-        num_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=5)
+        self.num_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=5)
+        num_frame = self.num_frame
         
-        # Make columns expand with more weight for label columns
-        # This ensures labels have enough room and text won't be clipped
-        # Label columns (0, 2) get weight=2, value columns (1, 3) get weight=1
-        num_frame.grid_columnconfigure(0, weight=2)
-        num_frame.grid_columnconfigure(1, weight=1)
-        num_frame.grid_columnconfigure(2, weight=2)
-        num_frame.grid_columnconfigure(3, weight=1)
+        # Make columns expand with weight for label columns
+        # Label columns (0, 3) get weight=2, value columns (1, 4) get weight=1
+        # Column 2 is for the separator
+        self.num_frame.grid_columnconfigure(0, weight=2, minsize=200)
+        self.num_frame.grid_columnconfigure(1, weight=1, minsize=100)
+        self.num_frame.grid_columnconfigure(2, weight=0, minsize=8)  # Separator column
+        self.num_frame.grid_columnconfigure(3, weight=2, minsize=200)
+        self.num_frame.grid_columnconfigure(4, weight=1, minsize=100)
+        
+        # Add a resizable separator between left and right columns (in column 2)
+        self.num_separator = ttk.Frame(self.num_frame, width=8, cursor="sb_h_double_arrow", style='Separator.TFrame')
+        # Span enough rows to cover all the numerical display fields (max 12 in each column)
+        self.num_separator.grid(row=0, column=2, rowspan=15, sticky=tk.NS, padx=2, pady=0)
+        
+        # Configure separator style
+        self.num_frame.tk.call("ttk::style", "configure", "Separator.TFrame", background="#434c5e")
+        
+        # Bind mouse events for resizing
+        self.num_separator.bind("<ButtonPress-1>", self._start_column_resize)
+        self.num_separator.bind("<B1-Motion>", self._on_column_resize)
+        self.num_separator.bind("<ButtonRelease-1>", self._stop_column_resize)
+        
+        # Store the initial mouse position and column widths for resizing
+        self.resize_data = {
+            'start_x': 0,
+            'left_total': 0,
+            'right_total': 0,
+            'separator_col': 2
+        }
         
         # Field names and values for display
         self.display_labels = {}
@@ -699,14 +722,14 @@ class LantanGUI:
             self.display_labels[field_key] = value_var
             self.display_label_widgets[field_key] = value_label
         
-        # Right column (grid columns 2-3)
+        # Right column (grid columns 3-4)
         for row, (label_text, field_key) in enumerate(right_column_fields):
             label = ttk.Label(num_frame, text=label_text + ":")
-            label.grid(row=row, column=2, sticky=tk.W, padx=5, pady=2)
+            label.grid(row=row, column=3, sticky=tk.W, padx=5, pady=2)
             
             value_var = tk.StringVar(value="N/A")
             value_label = ttk.Label(num_frame, textvariable=value_var)
-            value_label.grid(row=row, column=3, sticky=tk.E, padx=5, pady=2)
+            value_label.grid(row=row, column=4, sticky=tk.E, padx=5, pady=2)
             
             self.display_labels[field_key] = value_var
             self.display_label_widgets[field_key] = value_label
@@ -862,6 +885,53 @@ class LantanGUI:
         if self.left_canvas.winfo_containing(event.x_root, event.y_root) == self.left_canvas:
             self.left_canvas.yview_scroll(-1 * (event.delta // 120), tk.UNITS)
         return "break"
+    
+    def _start_column_resize(self, event):
+        """Start resizing the numerical display columns."""
+        # Store the starting position and current column widths
+        self.resize_data['start_x'] = event.x_root
+        # Get current widths of left columns (0,1) and right columns (3,4)
+        self.resize_data['left_total'] = (self.num_frame.grid_columnconfigure(0)['minsize'] + 
+                                          self.num_frame.grid_columnconfigure(1)['minsize'])
+        self.resize_data['right_total'] = (self.num_frame.grid_columnconfigure(3)['minsize'] + 
+                                           self.num_frame.grid_columnconfigure(4)['minsize'])
+    
+    def _on_column_resize(self, event):
+        """Handle column resizing while mouse is dragged."""
+        if self.resize_data['start_x'] == 0:
+            return
+        
+        # Calculate the delta
+        delta = event.x_root - self.resize_data['start_x']
+        
+        # Update the column widths
+        new_left = max(200, self.resize_data['left_total'] + delta)
+        new_right = max(200, self.resize_data['right_total'] - delta)
+        
+        # Distribute the width to the left columns (0,1) proportionally
+        # Left columns have weight 2:1 ratio
+        left_label_new = int(new_left * 2 / 3)
+        left_value_new = int(new_left * 1 / 3)
+        
+        # Distribute the width to the right columns (3,4) proportionally
+        # Right columns have weight 2:1 ratio
+        right_label_new = int(new_right * 2 / 3)
+        right_value_new = int(new_right * 1 / 3)
+        
+        # Update the column minsizes
+        self.num_frame.grid_columnconfigure(0, minsize=left_label_new)
+        self.num_frame.grid_columnconfigure(1, minsize=left_value_new)
+        self.num_frame.grid_columnconfigure(3, minsize=right_label_new)
+        self.num_frame.grid_columnconfigure(4, minsize=right_value_new)
+        
+        # Update the stored values for next motion event
+        self.resize_data['start_x'] = event.x_root
+        self.resize_data['left_total'] = new_left
+        self.resize_data['right_total'] = new_right
+    
+    def _stop_column_resize(self, event):
+        """Stop resizing the numerical display columns."""
+        self.resize_data['start_x'] = 0
     
     def _update_left_panel_scrollregion(self, event):
         """Update scroll region when left panel content size changes."""

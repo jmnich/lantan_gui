@@ -20,6 +20,29 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
+
+def get_dpi_scale_factor(root):
+    """Get the DPI scale factor of the screen."""
+    try:
+        # Try Windows API first
+        import ctypes
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+            scale_factor = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100.0
+            return scale_factor
+        except:
+            pass
+    except:
+        pass
+    
+    # Fallback: use tkinter's winfo to estimate DPI
+    try:
+        dpi = root.winfo_fpixels('1i')
+        # Standard DPI is 96, so scale factor is dpi/96
+        return dpi / 96.0
+    except:
+        return 1.0
+
 # Configure matplotlib with Nord dark theme
 plt.style.use('dark_background')
 # Nord color palette
@@ -256,6 +279,9 @@ class LantanGUI:
         # Launch in maximized window mode
         self.root.update()
         self.root.attributes('-zoomed', True)
+        
+        # Detect DPI scale factor
+        self.dpi_scale = get_dpi_scale_factor(self.root)
         
         # Apply dark theme
         self._apply_dark_theme()
@@ -615,11 +641,27 @@ class LantanGUI:
             labelanchor=tk.N
         )
         num_frame.pack(side=tk.TOP, fill=tk.X, pady=5)
-        # Set a minimum width for the num_frame to ensure labels don't get clipped
-        num_frame.grid_columnconfigure(0, weight=0, minsize=220)
-        num_frame.grid_columnconfigure(1, weight=0, minsize=100)
-        num_frame.grid_columnconfigure(2, weight=0, minsize=220)
-        num_frame.grid_columnconfigure(3, weight=0, minsize=100)
+        
+        # Set DPI-aware minimum column widths
+        # For low DPI (scale <= 1.5), use smaller widths
+        # For high DPI (scale > 1.5), use larger widths to prevent clipping
+        if self.dpi_scale <= 1.5:
+            # Low DPI: standard or slightly scaled displays
+            left_label_width = 200
+            left_value_width = 100
+            right_label_width = 200
+            right_value_width = 100
+        else:
+            # High DPI: use larger widths to accommodate scaled text
+            left_label_width = 300
+            left_value_width = 150
+            right_label_width = 300
+            right_value_width = 150
+        
+        num_frame.grid_columnconfigure(0, weight=0, minsize=left_label_width)
+        num_frame.grid_columnconfigure(1, weight=0, minsize=left_value_width)
+        num_frame.grid_columnconfigure(2, weight=0, minsize=right_label_width)
+        num_frame.grid_columnconfigure(3, weight=0, minsize=right_value_width)
         
         # Field names and values for display
         self.display_labels = {}

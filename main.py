@@ -658,7 +658,8 @@ class LantanGUI:
         self.num_separator.grid(row=0, column=2, rowspan=15, sticky=tk.NS, padx=2, pady=0)
         
         # Configure separator style
-        self.num_frame.tk.call("ttk::style", "configure", "Separator.TFrame", background="#434c5e")
+        style = ttk.Style()
+        style.configure("Separator.TFrame", background="#434c5e")
         
         # Bind mouse events for resizing
         self.num_separator.bind("<ButtonPress-1>", self._start_column_resize)

@@ -679,10 +679,10 @@ class LantanGUI:
         self.dut_d_data = [0.0] * self.max_samples
         
         # Plot lines with Nord palette colors for dark background
-        self.line_a, = self.ax.plot([], [], color=nord_blue, linewidth=2, label='DUT Response A')
-        self.line_b, = self.ax.plot([], [], color=nord_green, linewidth=2, label='DUT Response B')
-        self.line_c, = self.ax.plot([], [], color=nord_orange, linewidth=2, label='DUT Response C')
-        self.line_d, = self.ax.plot([], [], color=nord_purple, linewidth=2, label='DUT Response D')
+        self.line_a, = self.ax.plot([], [], color=nord_blue, linewidth=2, label='Ch A (450nm)')
+        self.line_b, = self.ax.plot([], [], color=nord_green, linewidth=2, label='Ch B (520nm)')
+        self.line_c, = self.ax.plot([], [], color=nord_orange, linewidth=2, label='Ch C (600nm)')
+        self.line_d, = self.ax.plot([], [], color=nord_purple, linewidth=2, label='Ch D (740nm)')
         
         self.ax.set_xlabel('Sample number', color=nord_fg)
         self.ax.set_ylabel('Intensity (a.u.)', color=nord_fg)

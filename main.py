@@ -29,6 +29,7 @@ nord_blue = '#88c0d0'
 nord_green = '#a3be8c'
 nord_red = '#bf616a'
 nord_purple = '#b48ead'
+nord_orange = '#d08770'
 plt.rcParams['figure.facecolor'] = nord_bg
 plt.rcParams['axes.facecolor'] = nord_bg
 plt.rcParams['axes.edgecolor'] = '#3b4252'
@@ -528,9 +529,9 @@ class LantanGUI:
         self.dut_d_data = [0.0] * self.max_samples
         
         # Plot lines with Nord palette colors for dark background
-        self.line_a, = self.ax.plot([], [], color=nord_red, linewidth=2, label='DUT Response A')
+        self.line_a, = self.ax.plot([], [], color=nord_blue, linewidth=2, label='DUT Response A')
         self.line_b, = self.ax.plot([], [], color=nord_green, linewidth=2, label='DUT Response B')
-        self.line_c, = self.ax.plot([], [], color=nord_blue, linewidth=2, label='DUT Response C')
+        self.line_c, = self.ax.plot([], [], color=nord_orange, linewidth=2, label='DUT Response C')
         self.line_d, = self.ax.plot([], [], color=nord_purple, linewidth=2, label='DUT Response D')
         
         self.ax.set_xlabel('Sample number', color=nord_fg)

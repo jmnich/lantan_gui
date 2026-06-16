@@ -439,8 +439,8 @@ class LantanGUI:
         self.main_container = ttk.Frame(self.root)
         self.main_container.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Configure grid: left expands to fit content, right expands to fill remaining space
-        self.main_container.grid_columnconfigure(0, weight=0, minsize=300)  # Left panel - don't expand beyond content, but has minimum width
+        # Configure grid: left has generous width for labels, right expands to fill remaining space
+        self.main_container.grid_columnconfigure(0, weight=0, minsize=700)  # Left panel - fixed width to fit all labels
         self.main_container.grid_columnconfigure(1, weight=1)  # Right panel expands
         self.main_container.grid_rowconfigure(0, weight=1)
         
@@ -640,28 +640,15 @@ class LantanGUI:
             text="Numerical Displays",
             labelanchor=tk.N
         )
-        num_frame.pack(side=tk.TOP, fill=tk.X, pady=5)
+        num_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=5)
         
-        # Set DPI-aware minimum column widths
-        # For low DPI (scale <= 1.5), use smaller widths
-        # For high DPI (scale > 1.5), use larger widths to prevent clipping
-        if self.dpi_scale <= 1.5:
-            # Low DPI: standard or slightly scaled displays
-            left_label_width = 200
-            left_value_width = 100
-            right_label_width = 200
-            right_value_width = 100
-        else:
-            # High DPI: use larger widths to accommodate scaled text
-            left_label_width = 300
-            left_value_width = 150
-            right_label_width = 300
-            right_value_width = 150
-        
-        num_frame.grid_columnconfigure(0, weight=0, minsize=left_label_width)
-        num_frame.grid_columnconfigure(1, weight=0, minsize=left_value_width)
-        num_frame.grid_columnconfigure(2, weight=0, minsize=right_label_width)
-        num_frame.grid_columnconfigure(3, weight=0, minsize=right_value_width)
+        # Make columns expand with more weight for label columns
+        # This ensures labels have enough room and text won't be clipped
+        # Label columns (0, 2) get weight=2, value columns (1, 3) get weight=1
+        num_frame.grid_columnconfigure(0, weight=2)
+        num_frame.grid_columnconfigure(1, weight=1)
+        num_frame.grid_columnconfigure(2, weight=2)
+        num_frame.grid_columnconfigure(3, weight=1)
         
         # Field names and values for display
         self.display_labels = {}

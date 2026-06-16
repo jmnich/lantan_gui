@@ -22,25 +22,57 @@ from tkinter import ttk, messagebox, filedialog
 
 
 def get_dpi_scale_factor(root):
-    """Get the DPI scale factor of the screen."""
+    """Get the DPI scale factor of the screen (cross-platform)."""
     try:
-        # Try Windows API first
         import ctypes
+        # Windows: use shcore for multi-monitor DPI awareness
         try:
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
             scale_factor = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100.0
             return scale_factor
-        except:
+        except Exception:
             pass
-    except:
+    except Exception:
+        pass
+    
+    try:
+        import subprocess
+        # Linux: use xrandr to get screen resolution and physical size
+        result = subprocess.run(['xrandr', '--query'], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                if ' connected' in line and 'primary' in line:
+                    # Parse: "1920x1080+0+0" and "mm: 518x291"
+                    size_match = line.split('mm:')
+                    if len(size_match) == 2:
+                        parts = size_match[1].strip().split()
+                        if len(parts) >= 2:
+                            width_mm = float(parts[0])
+                            # Extract resolution
+                            res_match = line.split('(')[1].split(')')[0]
+                            width_px = int(res_match.split('x')[0])
+                            dpi = (width_px / width_mm) * 25.4
+                            return max(1.0, dpi / 96.0)
+    except Exception:
+        pass
+    
+    try:
+        import subprocess
+        # macOS: use system_profiler to get display resolution
+        result = subprocess.run(['system_profiler', 'SPDisplaysDataType'], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0:
+            # macOS typically reports resolution in points; assume Retina (2x) or standard (1x)
+            if 'Retina' in result.stdout or 'Display' in result.stdout:
+                return 2.0
+            return 1.5
+    except Exception:
         pass
     
     # Fallback: use tkinter's winfo to estimate DPI
     try:
         dpi = root.winfo_fpixels('1i')
-        # Standard DPI is 96, so scale factor is dpi/96
         return dpi / 96.0
-    except:
+    except Exception:
         return 1.0
 
 # Configure matplotlib with Nord dark theme
@@ -428,6 +460,86 @@ class LantanGUI:
         self.root.option_add('*background', nord_bg)
         self.root.option_add('*foreground', nord_fg)
     
+    def _get_left_panel_min_width(self):
+        """Calculate minimum width for the left panel based on content and DPI."""
+        # Measure widest label in left column of numerical display
+        left_labels = [
+            'Power Good:',
+            'Channel A Active:',
+            'Channel B Active:',
+            'Channel C Active:',
+            'Channel D Active:',
+            'Mod Amp A (mA):',
+            'Mod Amp B (mA):',
+            'Mod Amp C (mA):',
+            'Mod Amp D (mA):',
+            'Det. Sensitivity:',
+            'Det. Gain:',
+            'Det. Out of Range:',
+        ]
+        
+        # Measure widest label in right column of numerical display
+        right_labels = [
+            'Voltage A (mV):',
+            'Voltage B (mV):',
+            'Voltage C (mV):',
+            'Voltage D (mV):',
+            'Current A (mA):',
+            'Current B (mA):',
+            'Current C (mA):',
+            'Current D (mA):',
+            'DUT Resp A:',
+            'DUT Resp B:',
+            'DUT Resp C:',
+            'DUT Resp D:',
+        ]
+        
+        # Measure widest labels in configuration panel
+        config_labels = [
+            'Channels:',
+            'Channel A',
+            'Channel B',
+            'Channel C',
+            'Channel D',
+            'Detector Sensitivity:',
+            'Detector Gain:',
+            'Modulation Intensity:',
+            'Channel A:',
+            'Channel B:',
+            'Channel C:',
+            'Channel D:',
+        ]
+        
+        # Measure widest value string (10 digits + decimal + sign)
+        value_text = '-1234567890.1'  # 12 chars: minus, 10 digits, dot, 1 digit
+        label_font = tk.font.Font(font='TkDefaultFont')
+        value_px = label_font.measure(value_text)
+        
+        # Calculate left column width (label column + value column)
+        left_label_max = max(label_font.measure(l) for l in left_labels)
+        left_value_w = value_px
+        left_col_width = left_label_max + left_value_w + 40  # padding
+        
+        # Calculate right column width (label column + value column)
+        right_label_max = max(label_font.measure(l) for l in right_labels)
+        right_value_w = value_px
+        right_col_width = right_label_max + right_value_w + 40  # padding
+        
+        # Separator width
+        separator_width = 8
+        
+        # Configuration panel needs: label column (wide) + value column (slider)
+        config_label_max = max(label_font.measure(l) for l in config_labels)
+        config_value_w = max(150, value_px)  # slider needs at least 150px
+        config_width = config_label_max + config_value_w + 50  # padding
+        
+        # Total minimum width = max of (num display total, config panel width) + extra padding
+        num_display_total = left_col_width + right_col_width + separator_width
+        total_min = max(num_display_total, config_width) + 30  # extra padding
+        
+        # Scale by DPI
+        return int(total_min * self.dpi_scale)
+    
     def _create_ui(self):
         """Create all UI components."""
         # Top menu ribbon frame
@@ -439,8 +551,9 @@ class LantanGUI:
         self.main_container = ttk.Frame(self.root)
         self.main_container.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Configure grid: left has generous width for labels, right expands to fill remaining space
-        self.main_container.grid_columnconfigure(0, weight=0, minsize=700)  # Left panel - fixed width to fit all labels
+        # Configure grid: left has DPI-aware minsize for labels, right expands to fill remaining space
+        left_min_width = self._get_left_panel_min_width()
+        self.main_container.grid_columnconfigure(0, weight=0, minsize=left_min_width)  # Left panel - DPI-aware minsize
         self.main_container.grid_columnconfigure(1, weight=1)  # Right panel expands
         self.main_container.grid_rowconfigure(0, weight=1)
         

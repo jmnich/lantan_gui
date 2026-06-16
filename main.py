@@ -647,16 +647,16 @@ class LantanGUI:
         # For high DPI (scale > 1.5), use larger widths to prevent clipping
         if self.dpi_scale <= 1.5:
             # Low DPI: standard or slightly scaled displays
-            left_label_width = 200
-            left_value_width = 100
-            right_label_width = 200
-            right_value_width = 100
-        else:
-            # High DPI: use larger widths to accommodate scaled text
             left_label_width = 300
             left_value_width = 150
             right_label_width = 300
             right_value_width = 150
+        else:
+            # High DPI: use larger widths to accommodate scaled text
+            left_label_width = 450
+            left_value_width = 225
+            right_label_width = 450
+            right_value_width = 225
         
         num_frame.grid_columnconfigure(0, weight=0, minsize=left_label_width)
         num_frame.grid_columnconfigure(1, weight=0, minsize=left_value_width)

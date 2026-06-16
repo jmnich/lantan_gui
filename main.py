@@ -246,6 +246,13 @@ class LantanGUI:
         self.root.geometry("2000x1200")
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         
+        # Enable DPI awareness for high-DPI displays
+        try:
+            from ctypes import windll
+            windll.shcore.SetProcessDpiAwareness(1)
+        except:
+            pass  # Only works on Windows, ignore on other platforms
+        
         # Launch in maximized window mode
         self.root.update()
         self.root.attributes('-zoomed', True)
@@ -406,8 +413,8 @@ class LantanGUI:
         self.main_container = ttk.Frame(self.root)
         self.main_container.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Configure grid: left has fixed width, right expands
-        self.main_container.grid_columnconfigure(0, minsize=450)  # Fixed width for left panel
+        # Configure grid: left expands to fit content, right expands to fill remaining space
+        self.main_container.grid_columnconfigure(0, weight=0, minsize=300)  # Left panel - don't expand beyond content, but has minimum width
         self.main_container.grid_columnconfigure(1, weight=1)  # Right panel expands
         self.main_container.grid_rowconfigure(0, weight=1)
         
@@ -415,6 +422,7 @@ class LantanGUI:
         # Create a scrollable frame for the left panel
         self.left_panel_frame = ttk.Frame(self.main_container)
         self.left_panel_frame.grid(row=0, column=0, sticky=tk.NSEW, padx=(5, 0), pady=5)
+        self.left_panel_frame.grid_columnconfigure(0, weight=1)
         
         # Create canvas for scrolling
         self.left_canvas = tk.Canvas(self.left_panel_frame, bg=nord_bg, highlightthickness=0)
@@ -427,6 +435,7 @@ class LantanGUI:
         
         # Frame inside canvas to hold the actual content
         self.left_panel = ttk.Frame(self.left_canvas)
+        self.left_panel.grid_columnconfigure(0, weight=1)
         self.left_canvas.create_window((0, 0), window=self.left_panel, anchor=tk.NW)
         
         # Bind scroll wheel to canvas and left panel frame for smoother scrolling
@@ -435,8 +444,10 @@ class LantanGUI:
         self.left_panel_frame.bind("<MouseWheel>", self._on_left_panel_scroll)
         self.left_scrollbar.bind("<MouseWheel>", self._on_left_panel_scroll)
         
-        # Bind configure event to update scroll region
+        # Bind configure event to update scroll region and window size
         self.left_panel.bind("<Configure>", self._update_left_panel_scrollregion)
+        self.left_canvas.bind("<Configure>", self._update_left_panel_scrollregion)
+        self.left_panel_frame.bind("<Configure>", self._update_left_panel_scrollregion)
         
         # Create menu ribbon
         self._create_menu_ribbon()
@@ -603,7 +614,11 @@ class LantanGUI:
             text="Numerical Displays",
             labelanchor=tk.N
         )
-        num_frame.pack(side=tk.TOP, fill=tk.X, pady=5)
+        num_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=5)
+        num_frame.grid_columnconfigure(0, weight=1)
+        num_frame.grid_columnconfigure(1, weight=1)
+        num_frame.grid_columnconfigure(2, weight=1)
+        num_frame.grid_columnconfigure(3, weight=1)
         
         # Field names and values for display
         self.display_labels = {}
@@ -673,7 +688,11 @@ class LantanGUI:
             text="Configuration",
             labelanchor=tk.N
         )
-        config_frame.pack(side=tk.TOP, fill=tk.X, pady=5)
+        config_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=5)
+        config_frame.grid_columnconfigure(0, weight=1)
+        config_frame.grid_columnconfigure(1, weight=1)
+        config_frame.grid_columnconfigure(2, weight=1)
+        config_frame.grid_columnconfigure(3, weight=1)
         
         # Channel enable checkboxes - arranged vertically to fit better
         ttk.Label(config_frame, text="Channels:").grid(
@@ -816,7 +835,10 @@ class LantanGUI:
     
     def _update_left_panel_scrollregion(self, event):
         """Update scroll region when left panel content size changes."""
+        # Update scroll region to fit all content
         self.left_canvas.configure(scrollregion=self.left_canvas.bbox("all"))
+        # Update the window width to match the canvas width
+        self.left_canvas.itemconfig(1, width=self.left_canvas.winfo_width())
     
     def _clear_data(self):
         """Clear all data buffers."""

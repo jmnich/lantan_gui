@@ -653,13 +653,9 @@ class LantanGUI:
         self.num_frame.grid_columnconfigure(4, weight=1, minsize=100)
         
         # Add a resizable separator between left and right columns (in column 2)
-        self.num_separator = ttk.Frame(self.num_frame, width=8, cursor="sb_h_double_arrow", style='Separator.TFrame')
+        self.num_separator = tk.Frame(self.num_frame, width=8, bg="#434c5e", cursor="sb_h_double_arrow")
         # Span enough rows to cover all the numerical display fields (max 12 in each column)
         self.num_separator.grid(row=0, column=2, rowspan=15, sticky=tk.NS, padx=2, pady=0)
-        
-        # Configure separator style
-        style = ttk.Style()
-        style.configure("Separator.TFrame", background="#434c5e")
         
         # Bind mouse events for resizing
         self.num_separator.bind("<ButtonPress-1>", self._start_column_resize)
